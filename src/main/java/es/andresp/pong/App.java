@@ -20,127 +20,117 @@ import javafx.util.Duration;
  */
 public class App extends Application {
 
-    int ballCenterX = 10;
-    int ballCurrentSpeedX = 5;
-    int ballDirectionX = 1;
-    
-    int ballCenterY = 10;
-    int ballCurrentSpeedY = 5;
-    int ballDirectionY = 1;
-    
-    
-    final int SCENE_TAM_X = 640;
-    final int SCENE_TAM_Y = 480;
-    final int STICK_WIDTH = 7;
-    final int STICK_HEIGHT = 50;
-    int stickPosY = (SCENE_TAM_Y - STICK_HEIGHT) / 2;
+    final short SCENE_HEIGHT = 480;
+    final short SCENE_WIDTH = 640;
 
-    int stickCurrentSpeed = 0;
+    short ballCenterX = 0;
+    byte ballCurrentSpeedX = 5;
+    byte ballDirectionX = 1;
     
+    short ballCenterY = 0;
+    byte ballCurrentSpeedY = 5;
+    byte ballDirectionY = 1;
+       
+    short stickHeight = 50;        
+    short stickPosY = (short)((SCENE_HEIGHT-stickHeight)/2);
+    byte stickCurrentSpeed = 5;
+    byte stickDirection = 0;
     
     @Override
     public void start(Stage stage) {
+        
+        
+//        StackPane root = new StackPane();
         Pane root = new Pane();
-        var scene = new Scene(root, SCENE_TAM_X, SCENE_TAM_Y);
+        var scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
         scene.setFill(Color.BLACK);
         stage.setScene(scene);
         stage.show();
         
-        //new Circle()=> Creamos objeto clase Circle
+        // new Circle() => Crear un objeto de la clase Circle
         Circle circleBall = new Circle();
-        //Llamando a metodos del objeto CircleBall
+        // Llamando a métodos del objeto circleBall
         circleBall.setCenterX(10);
         circleBall.setCenterY(30);
-        circleBall.setRadius(7);
+        circleBall.setRadius(7);  
         circleBall.setFill(Color.WHITE);
+        
+        
+        //Circle circleBall = new Circle(10, 30, 7);
+        
         root.getChildren().add(circleBall);
         
-        //rectangulo 1
-        Rectangle rectStick = new Rectangle(SCENE_TAM_X*0.9, stickPosY, STICK_WIDTH, STICK_HEIGHT);
+        Rectangle rectStick = new Rectangle();
+        rectStick.setWidth(10);
+        rectStick.setHeight(stickHeight);
+        rectStick.setX(SCENE_WIDTH - 40);
+        rectStick.setY(stickPosY);
         rectStick.setFill(Color.WHITE);
+        
         root.getChildren().add(rectStick);
         
+        scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            public void handle(final KeyEvent keyEvent) {
+                switch(keyEvent.getCode()) {
+                    case UP:
+                        stickDirection = -1;
+                        break;
+                    case DOWN:
+                        stickDirection = 1;
+                        break;
+                }                
+            }
+        });
+        scene.setOnKeyReleased(new EventHandler<KeyEvent>() {
+            public void handle(final KeyEvent keyEvent) {
+                stickDirection = 0;
+            }
+        });
         
-        
-      Timeline timeline = new Timeline(
+        Timeline timeline = new Timeline(
             // 0.017 ~= 60 FPS
             new KeyFrame(Duration.seconds(0.017), new EventHandler<ActionEvent>() {
                 public void handle(ActionEvent ae) {
                     circleBall.setCenterX(ballCenterX);
-                    ballCenterX+=ballCurrentSpeedX * ballDirectionX;
-                    if(ballCenterX >= 640){
+                    circleBall.setCenterY(ballCenterY);
+                    ballCenterX += ballCurrentSpeedX * ballDirectionX;
+                    ballCenterY += ballCurrentSpeedY * ballDirectionY;
+                    // Control de rebote horizontal
+                    if(ballCenterX >= 640) {
                         ballDirectionX = -1;
                     } else if(ballCenterX <= 0){
                         ballDirectionX = 1;
-                        
                     }
-                    
-                    circleBall.setCenterY(ballCenterY);
-                    ballCenterY+=ballCurrentSpeedY * ballDirectionY;
-                    if(ballCenterY >= 480){
+                    // Control de rebote vertical
+                    if(ballCenterY >= 480) {
                         ballDirectionY = -1;
                     } else if(ballCenterY <= 0){
                         ballDirectionY = 1;
-                        
                     }
                     
-                    if(ballCenterX >= SCENE_TAM_X) {
-                        
-                    
+                    rectStick.setY(stickPosY);
+                    stickPosY += stickCurrentSpeed * stickDirection;
+                    if(stickPosY <= 0 || stickPosY >= SCENE_HEIGHT-stickHeight) {
+                        stickDirection = 0;
+                    }
+                    if(stickPosY <= 0) {
+                        stickDirection = 0;
+                        stickPosY = 0;
+                    } else if (stickPosY >= SCENE_HEIGHT-stickHeight) {
+                        stickDirection = 0;
+                        stickPosY = (short)(SCENE_HEIGHT-stickHeight);
                     }
                     
-                    //JOISTICK
-        scene.setOnKeyPressed((KeyEvent event) -> {
-            switch(event.getCode()){
-                case UP:
-                //PULSADA TECLA ARRIBA
-                    stickCurrentSpeed = -6;
-                    break;
-                case DOWN:
-                //PULSADA TECLA ABAJO
-                    stickCurrentSpeed = 6;
-                    break;
-            }
-        }); 
-    
-        scene.setOnKeyReleased((KeyEvent event) -> {
-            stickCurrentSpeed = 0;
-        });
-     
-        //actualizar posicion de la pala
-        stickPosY += stickCurrentSpeed;
-        if(stickPosY < 0) {
-            //No sobrepasar borde superior de la ventana
-            stickPosY = 0;
-        } else {
-            // No sobrepasar borde inferior de la ventana
-           if(stickPosY > SCENE_TAM_Y - STICK_HEIGHT) {
-                stickPosY = SCENE_TAM_Y - STICK_HEIGHT;
-            }
-        }
-        rectStick.setY(stickPosY);
-        
+                    Shape shapeCollision = Shape.intersect(circleBall, rectStick);
+                    boolean colisionVacia = shapeCollision.getBoundsInLocal().isEmpty();
+                    if (colisionVacia == false){
+                    ballDirectionX = -1;
+                    }
                 }
             })                
         );
         timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();  
-        
-        
-        
-   Shape.intersect(circleBall, rectStick);     
-   Shape shapeColision = Shape.intersect(circleBall, rectStick);
-   boolean colisionVacia = shapeColision.getBoundsInLocal().isEmpty();
-   if(colisionVacia == false) {
-       //colision detectada. Mover bola hacia izquierda
-        ballCurrentSpeedX = -3;
-        
-    }     
-        
-        
-        
-        
-        
+        timeline.play();      
     }
 
     public static void main(String[] args) {
